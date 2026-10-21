@@ -16,21 +16,6 @@
 
 ---
 
-## 📌 Important Distinction / 重要区分
-
-> ⚠️ **Please Read Before Downloading / 下载前必读**
-
-This project (`ScratchMore`) is **completely independent** of the previous **Python Keywords Extension**. Do not confuse them! 
-*(本项目 `ScratchMore` 与之前的 **Python 关键字代码** 是完全独立的两个项目！)*
-
-| Feature / 特性 | Python Keywords (Old) / Python关键字 (旧) | ScratchMore (This Project) / ScratchMore (本项目) |
-| :--- | :--- | :--- |
-| **Focus / 核心定位** | Educational, Python syntax translation. | Hardcore game-engine features, low-level APIs. |
-| **Use Case / 适用场景** | Teaching logic (`if`, `for`, `in`). | Physics, Audio, Image Processing, Advanced Events. |
-| **Complexity / 复杂度** | Beginner-friendly. | For advanced creators (1000+ lines of JS). |
-
----
-
 ## 📖 Table of Contents / 目录
 
 - [✨ Monster Features / 核心功能](#-monster-features--核心功能)
@@ -40,7 +25,6 @@ This project (`ScratchMore`) is **completely independent** of the previous **Pyt
   - [4. Advanced Events](#4-advanced-events--高级事件)
   - [5. Control & Sensing](#5-control--sensing--控制与侦测)
   - [6. Super Math & Text](#6-super-math--text--运算与文本)
-  - [7. Text-to-Speech](#7-text-to-speech--语音合成)
 - [🚀 Installation & Usage / 安装与使用](#-installation--usage--安装与使用)
 - [⚠️ Sandbox Mode Warning / 沙盒模式警告](#-sandbox-mode-warning--沙盒模式警告)
 - [🛠️ Under the Hood / 底层技术揭秘](#️-under-the-hood--底层技术揭秘)
@@ -51,8 +35,8 @@ This project (`ScratchMore`) is **completely independent** of the previous **Pyt
 
 ## ✨ Monster Features / 核心功能
 
-ScratchMore provides a complete suite of advanced blocks divided into 7 main categories.
-*(ScratchMore 提供了分为 7 大模块的完整高级积木套件。)*
+ScratchMore provides a complete suite of advanced blocks divided into 6 main categories.
+*(ScratchMore 提供了分为 6 大模块的完整高级积木套件。)*
 
 ### 1. Movement & Physics / 移动与物理
 
@@ -87,7 +71,7 @@ Deep dive into `Web Audio API` and raw `PCM` data.
 *(深入 Web Audio API 和原始 PCM 数据。)*
 
 - **Reverse Audio / 音频倒放**: 
-  Extracts the raw audio buffer, reverses the waveform array, and plays it back. True reverse audio without pre-processing.
+  Extracts the raw audio buffer, reverses the waveform array, and plays it back. True reverse audio without pre-processing. Includes a fallback for parsing legacy WAV formats.
 - **Microphone Recording / 麦克风录音**: 
   Captures real-time audio from the user's microphone. Features a **custom UI with a blinking red dot and countdown timer**, turning green when finished.
 - **Play Recording / 播放录音**: 
@@ -107,8 +91,6 @@ Go beyond the standard "When Green Flag Clicked".
 
 ### 5. Control & Sensing / 控制与侦测
 
-- **Wait Until + Timeout / 条件成立后等待**: 
-  Waits for a condition to be true, and then waits an additional `N` seconds. Safely yields without freezing the project.
 - **Combo Key Detection / 组合键按下检测**: 
   Detects if two keys (e.g., `Ctrl + Z` or `Shift + A`) are pressed simultaneously using `util.ioQuery`.
 - **Stage Contains Color / 舞台背景颜色检测**: 
@@ -120,11 +102,6 @@ Go beyond the standard "When Green Flag Clicked".
 - **Root / 任意开方**: Calculates the `B`-th root of `A`. Prevents crashes on negative numbers or division by zero.
 - **Replace Text / 文本全局替换**: Replaces all occurrences of substring A with substring B using `split().join()` (safer than Regex).
 - **List Deduplicate / 列表极速去重**: Instantly removes all duplicates from a list using JS `Set` and forces the UI monitor to refresh.
-
-### 7. Text-to-Speech / 语音合成
-
-- **Speak Text / 朗读文本**: 
-  Uses the browser's native `SpeechSynthesis` API. Works offline! Supports adjusting the speed from `0.1x` to `10x`.
 
 ---
 
@@ -153,10 +130,10 @@ This extension uses TurboWarp-exclusive APIs, including **Web Audio**, **Canvas 
 
 ## 🛠️ Under the Hood / 底层技术揭秘
 
-Why is this extension so smooth? It’s not just basic Scratch blocks.
+Why is this extension so smooth? It's not just basic Scratch blocks.
 
 - **WebGL Skin Generation**: For `Replace Color`, we don't modify the original asset. We create a hidden `<canvas>`, paint pixels, and use `renderer.createBitmapSkin()` to hot-swap the skin at runtime.
-- **Web Audio API**: For `Reverse Audio`, we fetch the `.mp3` file as an `ArrayBuffer`, decode it to a `AudioBuffer`, reverse the float arrays, and play it using `AudioBufferSourceNode`.
+- **Web Audio API**: For `Reverse Audio`, we fetch the `.mp3` file as an `ArrayBuffer`, decode it to a `AudioBuffer`, reverse the float arrays, and play it using `AudioBufferSourceNode`. If the browser fails to decode native WAV formats, we manually parse the binary chunks.
 - **Thread-level Caching**: For `When List Changes`, we use `util.thread.getId()` to ensure each script has its own memory, preventing cross-interference between clones.
 - **ResizeObserver**: For `When Stage Resized`, standard `window.resize` is not enough. We observe the specific canvas element to detect TurboWarp UI changes.
 
@@ -164,8 +141,8 @@ Why is this extension so smooth? It’s not just basic Scratch blocks.
 
 ## ❓ FAQ / 常见问题
 
-**Q: Why does the Text-to-Speech block not play any sound?**
-A: Modern browsers require user interaction before playing audio. Make sure the user clicks the Green Flag or clicks on the stage before the block runs.
+**Q: Why does the Reverse Audio block fail on some native Scratch sounds?**
+A: Scratch's native sounds (like "Baa") are often stored in highly compressed or legacy WAV formats that the modern browser `decodeAudioData` API cannot parse. Please use a standard MP3 or record your own sound. Alternatively, use the "Reverse" button in Scratch's sound editor.
 
 **Q: Why does Microphone Recording fail?**
 A: Ensure you have granted microphone permissions in TurboWarp Desktop settings or your browser. If using a browser, make sure the URL is `https://` (not `http://`).
@@ -188,8 +165,8 @@ Special thanks to:
 ## 👨‍💻 Author / 作者
 
 **九九 (nine)**
-- 📺 Bilibili: [Watch Tutorials & Get Extraction Codes](https://space.bilibili.com/你的UID)
-- 🌐 Official Website: [ScratchMore Homepage](https://你的用户名.github.io/你的仓库/)
+- 📺 Bilibili: [Watch Tutorials & Get Extraction Codes](https://space.bilibili.com/3546910872832474)
+- 🌐 Official Website: [ScratchMore Homepage](https://zcqnine.github.io/More_Scratch/)
 
 <div align="center">
 
