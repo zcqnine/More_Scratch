@@ -1,6 +1,6 @@
 //by:Nine
-//Modification time:2026/10/18
-//v1.0.0
+//Modification time:2026/10/21
+//v1.0.1
 (function(Scratch) {
     "use strict";
 
@@ -30,7 +30,7 @@
                 const observer = new ResizeObserver(() => {
                     if (this.stageResizeTimer) clearTimeout(this.stageResizeTimer);
                     this.stageResizeTimer = setTimeout(() => {
-                        Scratch.vm.runtime.startHats('ScrMoBlock_whenStageResized');
+                        Scratch.vm.runtime.startHats('ScrMoBlock_whnStResHAT');
                     }, 100);
                 });
                 observer.observe(canvas);
@@ -217,27 +217,18 @@
                     {
                         opcode: "getStLoWREP",
                         blockType: Scratch.BlockType.REPORTER,
-                        text: "舞台逻辑宽度"
+                        text: "舞台逻辑宽度",
                     },
                     {
                         opcode: "getStDpWREP",
                         blockType: Scratch.BlockType.REPORTER,
-                        text: "舞台实际显示宽度"
+                        text: "舞台实际显示宽度",
                     },
                     { blockType: Scratch.BlockType.LABEL, text: "控制类" },
-                    {
-                        opcode: "waitTTiCOM",
-                        blockType: Scratch.BlockType.COMMAND, 
-                        text: "等待 [event] 成立，接着再等待 [s] 秒",
-                        arguments: {
-                            event: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: false },
-                            s: { type: Scratch.ArgumentType.NUMBER, defaultValue: 1.5 }
-                        }
-                    },
                     { blockType: Scratch.BlockType.LABEL, text: "侦测类" },
                     {
                         opcode: "cBKeyBOOL",
-                        blockType: Scratch.BlockType.BOOLEAN,
+                        blockType: Scratch.BlockType.BOOLEAN, 
                         text: "组合键 [KEY1] + [KEY2] 被按下?",
                         arguments: {
                             KEY1: { type: Scratch.ArgumentType.STRING, defaultValue: "control", menu: "keys" },
@@ -289,6 +280,8 @@
                             list: { type: Scratch.ArgumentType.STRING, menu: "lists", defaultValue: "无列表" }
                         }
                     },
+
+                    /*
                     { blockType: Scratch.BlockType.LABEL, text: "语音类" },
                     {
                         opcode: "speakTextCOM",
@@ -304,6 +297,7 @@
                         blockType: Scratch.BlockType.COMMAND,
                         text: "停止朗读"
                     }
+                    */
                 ]
             };
         }   
@@ -417,11 +411,13 @@
 
             this._recUITimer = setInterval(() => {
                 remaining--;
+                
                 if (remaining > 0) {
                     textNode.innerText = `正在录音... ${remaining} 秒`;
                 } else {
                     clearInterval(this._recUITimer);
                     this._recUITimer = null;
+                    
                     recUI.style.background = 'rgba(52, 199, 89, 0.95)'; 
                     recUI.style.boxShadow = '0 4px 15px rgba(52, 199, 89, 0.4)';
                     dot.style.animation = 'none'; 
@@ -443,7 +439,6 @@
                 const xArr = parseArray(args.xp);
                 const yArr = parseArray(args.yp);
                 if (!Array.isArray(xArr) || !Array.isArray(yArr) || xArr.length !== yArr.length || xArr.length < 2) {
-                    console.error("滑行积木：x和y数组长度不一致，或点数少于2个！");
                     return; 
                 }
                 util.stackFrame.xArr = xArr;
@@ -452,27 +447,34 @@
                 util.stackFrame.startTime = Date.now();
                 util.stackFrame.currentSegment = 0; 
             }
+
             const now = Date.now();
             const elapsed = now - util.stackFrame.startTime;
             const totalTime = util.stackFrame.totalTime;
             const xArr = util.stackFrame.xArr;
             const yArr = util.stackFrame.yArr;
             const pointsCount = xArr.length;
+
             const segmentDuration = totalTime / (pointsCount - 1);
             const segmentIndex = Math.floor(elapsed / segmentDuration);
+
             if (segmentIndex >= pointsCount - 1) {
                 util.target.setXY(xArr[pointsCount - 1], yArr[pointsCount - 1]);
                 delete util.stackFrame.startTime;
                 return;
             }
+
             const timeInSegment = elapsed % segmentDuration;
             const progress = timeInSegment / segmentDuration; 
+
             const startX = xArr[segmentIndex];
             const startY = yArr[segmentIndex];
             const endX = xArr[segmentIndex + 1];
             const endY = yArr[segmentIndex + 1];
+
             const currentX = startX + (endX - startX) * progress;
             const currentY = startY + (endY - startY) * progress;
+
             util.target.setXY(currentX, currentY);
             util.yield();
         }
@@ -480,7 +482,20 @@
         stepSpeedCOM(args) {
             const speed = Number(args.sped);
             this.moveSpeedMultiplier = speed > 0 ? speed : 1;
-            if (!this.hasAcknowledged) {
+            
+            const toolbox = document.querySelector('.blocklyToolboxDiv');
+            const menuBar = document.querySelector('.gui_menu-bar');
+            
+            let isEditorMode = false;
+            if (toolbox && menuBar) {
+                const toolboxRect = toolbox.getBoundingClientRect();
+                const menuBarRect = menuBar.getBoundingClientRect();
+                if (toolboxRect.width > 0 && menuBarRect.height > 0) {
+                    isEditorMode = true;
+                }
+            }
+
+            if (!this.hasAcknowledged && isEditorMode) {
                 this.showConfirmModal("⚠️ 设置成功！\n请使用本扩展中的『移动』积木才受倍率影响！");
             }
         }
@@ -490,9 +505,11 @@
             const currentY = util.target.y;
             const direction = Number(args.dir); 
             const step = Number(args.step);     
+
             const radians = (90 - direction) * (Math.PI / 180);
             const dx = step * Math.cos(radians);
             const dy = step * Math.sin(radians);
+
             util.target.setXY(currentX + dx, currentY + dy);
         }
 
@@ -503,21 +520,21 @@
             const radians = (90 - direction) * (Math.PI / 180);
             const dx = actualStep * Math.cos(radians);
             const dy = actualStep * Math.sin(radians);
+            
             util.target.setXY(util.target.x + dx, util.target.y + dy);
-            if (this.moveSpeedMultiplier !== 1) {
-                console.log(`✨ 自定义移动生效！原步数 ${baseStep}, 实际移动 ${actualStep} 步`);
-            }
         }
 
         tchColrDumCOM(args, util) {
             const renderer = Scratch.vm.runtime.renderer;
             if (!renderer) return; 
+
             const drawableID = util.target.drawableID;
             const hex = args.color.replace('#', '');
             const r = parseInt(hex.substring(0, 2), 16);
             const g = parseInt(hex.substring(2, 4), 16);
             const b = parseInt(hex.substring(4, 6), 16);
             const rgb = [r, g, b];
+
             if (renderer.isTouchingColor(drawableID, rgb)) {
                 util.target.setDirection(util.target.direction + 180);
             }
@@ -526,17 +543,24 @@
         chaSPrSpeedCOM(args, util) {
             const targetName = String(args.cha).trim();
             if (!targetName || targetName === "无角色") return;
+
             const target = Scratch.vm.runtime.getSpriteTargetByName(targetName);
             if (!target || target === util.target) return; 
+
             const dx = target.x - util.target.x;
             const dy = target.y - util.target.y;
             const distance = Math.sqrt(dx * dx + dy * dy); 
             const targetDist = Number(args.px);
+            
             if (distance === 0) return; 
+
             const maxSpeed = Number(args.step) || 10; 
             const diff = distance - targetDist; 
+
             if (Math.abs(diff) < 0.5) return;
+
             let moveAmount = 0;
+
             if (args.xian === "linear") {
                 moveAmount = Math.sign(diff) * Math.min(Math.abs(diff), maxSpeed);
             } else {
@@ -545,9 +569,11 @@
                     moveAmount = Math.sign(moveAmount) * maxSpeed;
                 }
             }
+
             let angleRad = Math.atan2(dy, dx);
             let scratchDir = 90 - (angleRad * 180 / Math.PI);
             util.target.setDirection(scratchDir);
+
             const ux = dx / distance; 
             const uy = dy / distance; 
             util.target.setXY(util.target.x + ux * moveAmount, util.target.y + uy * moveAmount);
@@ -555,54 +581,61 @@
 
         repColorCOM(args, util) {
             const costume = util.target.sprite.costumes.find(c => c.name === args.anu);
-            if (!costume) {
-                console.warn("未找到指定造型:", args.anu);
-                return;
-            }
+            if (!costume) return;
+
             const hexToRgb = (hex) => {
                 const h = hex.replace('#', '');
                 return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
             };
             const oldRgb = hexToRgb(args.coulor1);
             const newRgb = hexToRgb(args.coulor2);
+
             const img = new Image();
             img.src = costume.asset.encodeDataURI();
             
             img.onload = () => {
                 if (img.width === 0 || img.height === 0) return;
+
                 const renderer = Scratch.vm.runtime.renderer;
                 const drawable = renderer._allDrawables[util.target.drawableID];
                 const oldSkin = drawable.skin;
                 const targetWidth = oldSkin.size[0];
                 const targetHeight = oldSkin.size[1];
+
                 const canvas = document.createElement('canvas');
                 const SCALE = 2; 
                 canvas.width = targetWidth * SCALE;
                 canvas.height = targetHeight * SCALE;
                 const ctx = canvas.getContext('2d');
+
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
                 const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imgData.data;
-                let replacedCount = 0;
+
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i], g = data[i + 1], b = data[i + 2];
                     const tolerance = 15; 
-                    if (Math.abs(r - oldRgb[0]) <= tolerance && Math.abs(g - oldRgb[1]) <= tolerance && Math.abs(b - oldRgb[2]) <= tolerance && data[i + 3] > 0) { 
+                    if (Math.abs(r - oldRgb[0]) <= tolerance && 
+                        Math.abs(g - oldRgb[1]) <= tolerance && 
+                        Math.abs(b - oldRgb[2]) <= tolerance &&
+                        data[i + 3] > 0) { 
                         data[i] = newRgb[0];
                         data[i + 1] = newRgb[1];
                         data[i + 2] = newRgb[2];
-                        replacedCount++;
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
+
                 const skinId = renderer.createBitmapSkin(canvas); 
                 const newSkin = renderer._allSkins[skinId];
+
                 if (newSkin && oldSkin) {
                     newSkin._size = oldSkin._size; 
                     newSkin._rotationCenter = oldSkin._rotationCenter;
                 }
+
                 renderer.updateDrawableSkinId(util.target.drawableID, skinId);
-                console.log(`✨ 替换完毕！共修改了 ${replacedCount} 个像素。`);
             };
         }
 
@@ -613,26 +646,35 @@
         }
 
         async filpSodCOM(args, util) {
-            const sound = util.target.sprite.sounds.find(s => s.name === args.sound);
-            if (!sound || !sound.asset) {
-                console.warn("❌ 没找到声音或声音资产尚未加载！");
-                return;
-            }
+            const target = util.target;
+            const sound = target.sprite.sounds.find(s => s.name === args.sound);
+            if (!sound || !sound.asset) return;
+
             try {
                 const audioEngine = Scratch.vm.runtime.audioEngine;
                 const audioContext = audioEngine.audioContext;
-                if (audioContext.state === 'suspended') {
-                    await audioContext.resume();
-                }
+                if (audioContext.state === 'suspended') await audioContext.resume();
+
                 const dataURI = sound.asset.encodeDataURI();
                 const response = await fetch(dataURI);
                 const arrayBuffer = await response.arrayBuffer();
-                const originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                let originalBuffer;
+                try {
+                    originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                } catch (decodeError) {
+                    originalBuffer = this.manualWavParse(arrayBuffer, audioContext);
+                    if (!originalBuffer) throw decodeError;
+                }
+
+                if (!originalBuffer) throw new Error("无法解析该音频格式");
+
                 const reversedBuffer = audioContext.createBuffer(
                     originalBuffer.numberOfChannels,
                     originalBuffer.length,
                     originalBuffer.sampleRate
                 );
+
                 for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
                     const originalData = originalBuffer.getChannelData(channel);
                     const reversedData = reversedBuffer.getChannelData(channel);
@@ -640,35 +682,90 @@
                         reversedData[i] = originalData[originalData.length - 1 - i];
                     }
                 }
+
                 const source = audioContext.createBufferSource();
                 source.buffer = reversedBuffer;
                 const inputNode = audioEngine.inputNode || audioContext.destination;
                 source.connect(inputNode);
                 source.start(0);
-                await new Promise((resolve) => {
-                    source.onended = resolve;
-                });
+
+                await new Promise((resolve) => source.onended = resolve);
+
             } catch (e) {
-                console.error("💥 倒放发生错误:", e);
+                alert(`❌ 动态倒放失败：音效 [${args.sound}] 的底层格式太特殊（如特殊编码的WAV），浏览器无法实时解析！\n\n👉 解决办法：\n1. 如果你只想永久翻转这个音效，请直接去 Scratch 的声音编辑器里，点击下方的『反转』按钮。\n2. 如果你需要在游戏运行时动态倒放，请自己上传一个标准的 MP3 音效。\n3. 前往声音编辑面点击两次“反转”再使用此积木。`);
             }
+        }
+
+        manualWavParse(arrayBuffer, audioContext) {
+            const view = new DataView(arrayBuffer);
+            if (view.getUint32(0, false) !== 0x52494646 || view.getUint32(8, false) !== 0x57415645) {
+                return null; 
+            }
+
+            let offset = 12;
+            let format = null;
+            let dataOffset = -1;
+            let dataLength = 0;
+
+            while (offset < view.byteLength) {
+                const chunkId = view.getUint32(offset, false);
+                const chunkSize = view.getUint32(offset + 4, true);
+
+                if (chunkId === 0x666d7420) { 
+                    const audioFormat = view.getUint16(offset + 8, true);
+                    const numChannels = view.getUint16(offset + 10, true);
+                    const sampleRate = view.getUint32(offset + 12, true);
+                    const bitsPerSample = view.getUint16(offset + 22, true);
+                    format = { audioFormat, numChannels, sampleRate, bitsPerSample };
+                } else if (chunkId === 0x64617461) { 
+                    dataOffset = offset + 8;
+                    dataLength = chunkSize;
+                    break;
+                }
+                offset += 8 + chunkSize + (chunkSize % 2); 
+            }
+
+            if (!format || dataOffset === -1) return null;
+
+            if (format.audioFormat !== 1 || format.bitsPerSample !== 16) {
+                return null; 
+            }
+
+            const numSamples = dataLength / 2;
+            const audioBuffer = audioContext.createBuffer(format.numChannels, numSamples / format.numChannels, format.sampleRate);
+
+            for (let channel = 0; channel < format.numChannels; channel++) {
+                const channelData = audioBuffer.getChannelData(channel);
+                let sampleIndex = 0;
+                for (let i = dataOffset + (channel * 2); i < dataOffset + dataLength; i += (format.numChannels * 2)) {
+                    const int16 = view.getInt16(i, true);
+                    channelData[sampleIndex++] = int16 / 32768.0; 
+                }
+            }
+            return audioBuffer;
         }
 
         async recordCOM(args, util) {
             const secs = Number(args.secs);
             const rename = String(args.rename).trim();
             if (secs <= 0 || !rename) return;
+
             const audioEngine = Scratch.vm.runtime.audioEngine;
             const audioContext = audioEngine.audioContext;
             if (audioContext && audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
                 const mediaRecorder = new MediaRecorder(stream);
                 const chunks = [];
+
                 mediaRecorder.ondataavailable = (e) => {
                     if (e.data.size > 0) chunks.push(e.data);
                 };
+
                 const recordingPromise = new Promise((resolve, reject) => {
                     mediaRecorder.onstop = async () => {
                         stream.getTracks().forEach(track => track.stop());
@@ -682,18 +779,22 @@
                             reject(err);
                         }
                     };
+
                     mediaRecorder.onerror = (err) => reject(err);
+
                     mediaRecorder.start();
                     this.showRecordingUI(secs);
+
                     setTimeout(() => {
                         if (mediaRecorder.state !== 'inactive') {
                             mediaRecorder.stop();
                         }
                     }, secs * 1000);
                 });
+
                 await recordingPromise;
+
             } catch (e) {
-                console.error("❌ 录音失败:", e);
                 alert(`录音失败: ${e.name}\n原因: ${e.message}\n请检查系统或软件麦克风权限！`);
             }
         }
@@ -701,26 +802,29 @@
         async playRecCOM(args, util) {
             const rename = String(args.prename).trim();
             const audioBuffer = this.recordings[rename];
-            if (!audioBuffer) {
-                console.warn(`❌ 找不到名为 [${rename}] 的录音，请先录制！`);
-                return;
-            }
+
+            if (!audioBuffer) return;
+
             try {
                 const audioEngine = Scratch.vm.runtime.audioEngine;
                 const audioContext = audioEngine.audioContext;
+
                 if (audioContext.state === 'suspended') {
                     await audioContext.resume();
                 }
+
                 const source = audioContext.createBufferSource();
                 source.buffer = audioBuffer;
+                
                 const inputNode = audioEngine.inputNode || audioContext.destination;
                 source.connect(inputNode);
                 source.start(0);
+
                 await new Promise((resolve) => {
                     source.onended = resolve;
                 });
             } catch (e) {
-                console.error("💥 播放录音失败:", e);
+                // 忽略错误
             }
         }
 
@@ -728,18 +832,24 @@
             const threadId = util.thread.getId(); 
             const listName = args.list; 
             const target = util.target; 
+
             if (!listName || listName === "无列表") return false;
+
             const variable = target.lookupOrCreateList(listName, listName);
             if (!variable) return false;
+
             const currentValue = JSON.stringify(variable.value);
+
             if (this.listThreadValues[threadId] === undefined) {
                 this.listThreadValues[threadId] = currentValue;
                 return false; 
             }
+
             if (this.listThreadValues[threadId] !== currentValue) {
                 this.listThreadValues[threadId] = currentValue; 
                 return true; 
             }
+
             return false; 
         }
 
@@ -761,38 +871,17 @@
             return canvas ? canvas.clientWidth : 480;
         }
 
-        waitTTiCOM(args, util) {
-            if (util.stackFrame.phase === undefined) {
-                util.stackFrame.phase = 1;
-            }
-            if (util.stackFrame.phase === 1) {
-                if (!Boolean(args.event)) {
-                    util.yield(); 
-                    return;
-                }
-                util.stackFrame.phase = 2;
-                util.stackFrame.startDelayTime = Date.now();
-            }
-            if (util.stackFrame.phase === 2) {
-                const waitMs = Number(args.s) * 1000;
-                const elapsed = Date.now() - util.stackFrame.startDelayTime;
-                if (elapsed < waitMs) {
-                    util.yield(); 
-                    return;
-                }
-                delete util.stackFrame.phase;
-                delete util.stackFrame.startDelayTime;
-            }
-        }
-
-        cBKeyBOOL(args, util) {
+        cBKeyBOOL(args,util) {
             const key1 = Scratch.Cast.toString(args.KEY1).toLowerCase();
             const key2 = Scratch.Cast.toString(args.KEY2).toLowerCase();
+
             if (key1 === key2) {
                 return util.ioQuery("keyboard", "getKeyIsDown", [key1]);
             }
+
             const isKey1Down = util.ioQuery("keyboard", "getKeyIsDown", [key1]);
             const isKey2Down = util.ioQuery("keyboard", "getKeyIsDown", [key2]);
+
             return isKey1Down && isKey2Down;
         }
 
@@ -803,10 +892,14 @@
                 parseInt(hex.substring(2, 4), 16), 
                 parseInt(hex.substring(4, 6), 16)
             ];
+
             const stage = Scratch.vm.runtime.getTargetForStage();
             const costume = stage.sprite.costumes[stage.currentCostume];
+            
             if (!costume) return false;
+            
             const cacheKey = costume.assetId; 
+
             if (this.bgColorCache[cacheKey]) {
                 const data = this.bgColorCache[cacheKey];
                 for (let i = 0; i < data.length; i += 4) {
@@ -820,6 +913,7 @@
                 }
                 return false;
             }
+
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
@@ -828,8 +922,10 @@
                     canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
+                    
                     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     this.bgColorCache[cacheKey] = imgData.data; 
+
                     for (let i = 0; i < imgData.data.length; i += 4) {
                         if (imgData.data[i + 3] > 0) { 
                             if (Math.abs(imgData.data[i] - targetRgb[0]) <= 10 &&
@@ -874,37 +970,44 @@
         deRepListCOM(args, util) {
             const listName = String(args.list).trim();
             if (!listName || listName === "无列表") return;
+
             const variable = util.target.lookupOrCreateList(listName, listName);
             if (!variable) return;
+
             const uniqueValues = [...new Set(variable.value)];
             variable.value = uniqueValues;
+
             util.runtime.requestUpdateMonitor({
                 id: variable.id,
                 value: variable.value
             });
-            console.log(`🧹 列表 [${listName}] 去重完成，剩余 ${uniqueValues.length} 个元素。`);
         }
 
+        /*
         speakTextCOM(args) {
             const text = String(args.text);
             const rate = Number(args.rate) || 1;
+
             if (!text) return;
+
             window.speechSynthesis.cancel();
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = Math.max(0.1, Math.min(10, rate));
+            
             const voices = window.speechSynthesis.getVoices();
             const zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN'));
             if (zhVoice) {
                 utterance.voice = zhVoice;
             }
+
             window.speechSynthesis.speak(utterance);
-            console.log(`🗣️ 正在朗读: ${text} (语速: ${utterance.rate})`);
         }
 
         stopSpeakCOM() {
             window.speechSynthesis.cancel();
-            console.log("🔇 已停止朗读");
         }
+        */
     }
 
     Scratch.extensions.register(new ScratchMore());
